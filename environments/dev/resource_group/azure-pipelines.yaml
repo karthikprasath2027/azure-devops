@@ -1,6 +1,8 @@
-trigger: none
+trigger: 
+  branches:
+    master: true
 
-pool: SelfHosted
+pool: mammal
 
 variables:
   - group: AZURE
@@ -26,18 +28,6 @@ parameters:
   - name: Destroy
     type: boolean
     default: false
-  - name: resourceGroupName
-    type: string
-    default: ""
-  - name: accountName
-    type: string
-    default: ""
-  - name: tags
-    type: object
-    default:
-      Owner: ""
-      Environment: ""
-      Terraform: ""
 
 stages:
   - stage: plan
