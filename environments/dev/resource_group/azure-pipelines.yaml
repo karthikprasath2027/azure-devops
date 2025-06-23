@@ -25,14 +25,14 @@ parameters:
   - name: tags
     type: object
     default:
-      Owner: ""
-      Environment: ""
-      Terraform: ""
+      Owner: "devops"
+      Environment: "dev"
+      Terraform: "true"
 
 stages:
   - stage: plan
     displayName: 'Terraform Init, Validate and Plan'
-    condition: eq('${{ parameters.Plan }}', 'true')
+    condition: eq(parameters.Plan, true)
     jobs:
       - deployment: plan
         displayName: 'Run Terraform Plan'
@@ -65,14 +65,15 @@ stages:
                     provider: 'azurerm'
                     command: 'plan'
                     workingDirectory: $(workingDirectory)
-                    vars: |
-                      {
-                        "tags": ${{ convertToJson(parameters.tags) }}
-                      }
+                    environmentServiceNameAzureRM: 'Your-Service-Connection'
+                    terraformArguments: >
+                      -var "tags.Owner=${{ parameters.tags.Owner }}"
+                      -var "tags.Environment=${{ parameters.tags.Environment }}"
+                      -var "tags.Terraform=${{ parameters.tags.Terraform }}"
 
   - stage: apply
     dependsOn: plan
-    condition: eq('${{ parameters.Apply }}', 'true')
+    condition: eq(parameters.Apply, true)
     displayName: 'Terraform Apply'
     jobs:
       - deployment: apply
@@ -97,14 +98,15 @@ stages:
                     provider: 'azurerm'
                     command: 'apply'
                     workingDirectory: $(workingDirectory)
-                    vars: |
-                      {
-                        "tags": ${{ convertToJson(parameters.tags) }}
-                      }
+                    environmentServiceNameAzureRM: 'Your-Service-Connection'
+                    terraformArguments: >
+                      -var "tags.Owner=${{ parameters.tags.Owner }}"
+                      -var "tags.Environment=${{ parameters.tags.Environment }}"
+                      -var "tags.Terraform=${{ parameters.tags.Terraform }}"
 
   - stage: destroy
     dependsOn: plan
-    condition: eq('${{ parameters.Destroy }}', 'true')
+    condition: eq(parameters.Destroy, true)
     displayName: 'Terraform Destroy'
     jobs:
       - deployment: destroy
@@ -129,3 +131,8 @@ stages:
                     provider: 'azurerm'
                     command: 'destroy'
                     workingDirectory: $(workingDirectory)
+                    environmentServiceNameAzureRM: 'Your-Service-Connection'
+                    terraformArguments: >
+                      -var "tags.Owner=${{ parameters.tags.Owner }}"
+                      -var "tags.Environment=${{ parameters.tags.Environment }}"
+                      -var "tags.Terraform=${{ parameters.tags.Terraform }}"
