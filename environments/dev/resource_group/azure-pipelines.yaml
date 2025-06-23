@@ -1,6 +1,7 @@
-trigger: 
+trigger:
   branches:
-    master: true
+    include:
+      - master
 
 pool: mammal
 
