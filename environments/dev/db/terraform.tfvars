@@ -1,0 +1,6 @@
+resource_group_name = "dev-rg"
+location           = "East US"
+db_name            = "dev-db"
+admin_username     = "psqladmin"
+admin_password     = "P@ssw0rd1234!"
+sku_name           = "B_Gen5_1"

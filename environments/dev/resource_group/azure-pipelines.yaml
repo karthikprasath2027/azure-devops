@@ -1,0 +1,162 @@
+trigger: none
+
+pool: SelfHosted
+
+variables:
+  - group: AZURE
+  - name: backendServiceArm
+    value: 'azure-devops' # Name of your Azure DevOps service connection
+  - name: backendAzureStorageAccountName
+    value: 'backendazure00'     # Your Azure Storage Account for state
+  - name: backendAzureContainerName
+    value: 'tfstate'
+  - name: backendAzureKey
+    value: 'dev/vnet/terraform.tfstate'
+  - name: workingDirectory
+    value: '$(System.DefaultWorkingDirectory)/bp-itinfra-terraform-azure-project/environments/dev/vnet/'
+  - name: azureLocation
+    value: 'East US'
+  - name: tag_string
+    value: ${{ convertToJson(parameters.tags) }}
+
+parameters:
+  - name: Apply
+    type: boolean
+    default: false
+  - name: Destroy
+    type: boolean
+    default: false
+  - name: resourceGroupName
+    type: string
+    default: ""
+  - name: accountName
+    type: string
+    default: ""
+  - name: tags
+    type: object
+    default:
+      Owner: ""
+      Environment: ""
+      Terraform: ""
+
+stages:
+  - stage: plan
+    displayName: 'Terraform Init, Validate and Plan'
+    jobs:
+      - deployment: plan
+        displayName: 'Run Terraform Plan'
+        environment: DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  persistCredentials: true
+                  fetchDepth: 1
+
+                - task: TerraformTaskV4@4
+                  displayName: 'Terraform Init'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'init'
+                    backendServiceArm: $(backendServiceArm)
+                    backendAzureRmResourceGroupName: ${{ parameters.resourceGroupName }}
+                    backendAzureRmStorageAccountName: $(backendAzureStorageAccountName)
+                    backendAzureRmContainerName: $(backendAzureContainerName)
+                    backendAzureRmKey: $(backendAzureKey)
+                    workingDirectory: $(workingDirectory)
+
+                - task: TerraformTaskV4@4
+                  displayName: 'Terraform Validate'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'validate'
+                    workingDirectory: $(workingDirectory)
+
+                - task: TerraformTaskV4@4
+                  displayName: 'Terraform Plan'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'plan'
+                    environmentServiceNameAzureRM: $(backendServiceArm)
+                    workingDirectory: $(workingDirectory)
+                    vars: |
+                      {
+                        "tags": ${{ convertToJson(parameters.tags) }},
+                        "resource_group_name": "${{ parameters.resourceGroupName }}",
+                        "account_name": "${{ parameters.accountName }}"
+                      }
+
+  - stage: apply
+    dependsOn: plan
+    condition: eq('${{ parameters.Apply }}', 'true')
+    displayName: 'Terraform Apply'
+    jobs:
+      - deployment: apply
+        displayName: 'Run Terraform Apply'
+        environment: DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: TerraformTaskV4@4
+                  displayName: 'Terraform Init'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'init'
+                    backendServiceArm: $(backendServiceArm)
+                    backendAzureRmResourceGroupName: ${{ parameters.resourceGroupName }}
+                    backendAzureRmStorageAccountName: $(backendAzureStorageAccountName)
+                    backendAzureRmContainerName: $(backendAzureContainerName)
+                    backendAzureRmKey: $(backendAzureKey)
+                    workingDirectory: $(workingDirectory)
+
+                - task: TerraformTaskV4@4
+                  displayName: 'Terraform Apply'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'apply'
+                    environmentServiceNameAzureRM: $(backendServiceArm)
+                    workingDirectory: $(workingDirectory)
+                    vars: |
+                      {
+                        "tags": ${{ convertToJson(parameters.tags) }},
+                        "resource_group_name": "${{ parameters.resourceGroupName }}",
+                        "account_name": "${{ parameters.accountName }}"
+                      }
+
+  - stage: destroy
+    dependsOn: plan
+    condition: eq('${{ parameters.Destroy }}', 'true')
+    displayName: 'Terraform Destroy'
+    jobs:
+      - deployment: destroy
+        displayName: 'Run Terraform Destroy'
+        environment: DEV
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: TerraformTaskV4@4
+                  displayName: 'Terraform Init'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'init'
+                    backendServiceArm: $(backendServiceArm)
+                    backendAzureRmResourceGroupName: ${{ parameters.resourceGroupName }}
+                    backendAzureRmStorageAccountName: $(backendAzureStorageAccountName)
+                    backendAzureRmContainerName: $(backendAzureContainerName)
+                    backendAzureRmKey: $(backendAzureKey)
+                    workingDirectory: $(workingDirectory)
+
+                - task: TerraformTaskV4@4
+                  displayName: 'Terraform Destroy'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'destroy'
+                    environmentServiceNameAzureRM: $(backendServiceArm)
+                    workingDirectory: $(workingDirectory)
