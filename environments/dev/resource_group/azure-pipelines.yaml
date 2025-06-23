@@ -13,6 +13,9 @@ variables:
     value: 'East US'
 
 parameters:
+  - name: Plan
+    type: boolean
+    default: true
   - name: Apply
     type: boolean
     default: false
@@ -29,6 +32,7 @@ parameters:
 stages:
   - stage: plan
     displayName: 'Terraform Init, Validate and Plan'
+    condition: eq('${{ parameters.Plan }}', 'true')
     jobs:
       - deployment: plan
         displayName: 'Run Terraform Plan'
