@@ -7,20 +7,10 @@ pool: mammal
 
 variables:
   - group: AZURE
-  - name: backendServiceArm
-    value: 'azure-devops' # Name of your Azure DevOps service connection
-  - name: backendAzureStorageAccountName
-    value: 'backendazure00'     # Your Azure Storage Account for state
-  - name: backendAzureContainerName
-    value: 'tfstate'
-  - name: backendAzureKey
-    value: 'dev/vnet/terraform.tfstate'
   - name: workingDirectory
     value: '$(System.DefaultWorkingDirectory)/bp-itinfra-terraform-azure-project/environments/dev/vnet/'
   - name: azureLocation
     value: 'East US'
-  - name: tag_string
-    value: ${{ convertToJson(parameters.tags) }}
 
 parameters:
   - name: Apply
@@ -29,6 +19,12 @@ parameters:
   - name: Destroy
     type: boolean
     default: false
+  - name: tags
+    type: object
+    default:
+      Owner: ""
+      Environment: ""
+      Terraform: ""
 
 stages:
   - stage: plan
@@ -50,11 +46,6 @@ stages:
                   inputs:
                     provider: 'azurerm'
                     command: 'init'
-                    backendServiceArm: $(backendServiceArm)
-                    backendAzureRmResourceGroupName: ${{ parameters.resourceGroupName }}
-                    backendAzureRmStorageAccountName: $(backendAzureStorageAccountName)
-                    backendAzureRmContainerName: $(backendAzureContainerName)
-                    backendAzureRmKey: $(backendAzureKey)
                     workingDirectory: $(workingDirectory)
 
                 - task: TerraformTaskV4@4
@@ -69,13 +60,10 @@ stages:
                   inputs:
                     provider: 'azurerm'
                     command: 'plan'
-                    environmentServiceNameAzureRM: $(backendServiceArm)
                     workingDirectory: $(workingDirectory)
                     vars: |
                       {
-                        "tags": ${{ convertToJson(parameters.tags) }},
-                        "resource_group_name": "${{ parameters.resourceGroupName }}",
-                        "account_name": "${{ parameters.accountName }}"
+                        "tags": ${{ convertToJson(parameters.tags) }}
                       }
 
   - stage: apply
@@ -97,11 +85,6 @@ stages:
                   inputs:
                     provider: 'azurerm'
                     command: 'init'
-                    backendServiceArm: $(backendServiceArm)
-                    backendAzureRmResourceGroupName: ${{ parameters.resourceGroupName }}
-                    backendAzureRmStorageAccountName: $(backendAzureStorageAccountName)
-                    backendAzureRmContainerName: $(backendAzureContainerName)
-                    backendAzureRmKey: $(backendAzureKey)
                     workingDirectory: $(workingDirectory)
 
                 - task: TerraformTaskV4@4
@@ -109,13 +92,10 @@ stages:
                   inputs:
                     provider: 'azurerm'
                     command: 'apply'
-                    environmentServiceNameAzureRM: $(backendServiceArm)
                     workingDirectory: $(workingDirectory)
                     vars: |
                       {
-                        "tags": ${{ convertToJson(parameters.tags) }},
-                        "resource_group_name": "${{ parameters.resourceGroupName }}",
-                        "account_name": "${{ parameters.accountName }}"
+                        "tags": ${{ convertToJson(parameters.tags) }}
                       }
 
   - stage: destroy
@@ -137,11 +117,6 @@ stages:
                   inputs:
                     provider: 'azurerm'
                     command: 'init'
-                    backendServiceArm: $(backendServiceArm)
-                    backendAzureRmResourceGroupName: ${{ parameters.resourceGroupName }}
-                    backendAzureRmStorageAccountName: $(backendAzureStorageAccountName)
-                    backendAzureRmContainerName: $(backendAzureContainerName)
-                    backendAzureRmKey: $(backendAzureKey)
                     workingDirectory: $(workingDirectory)
 
                 - task: TerraformTaskV4@4
@@ -149,5 +124,4 @@ stages:
                   inputs:
                     provider: 'azurerm'
                     command: 'destroy'
-                    environmentServiceNameAzureRM: $(backendServiceArm)
                     workingDirectory: $(workingDirectory)
